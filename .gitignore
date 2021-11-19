@@ -1,2 +1,6 @@
 cache/
 .venv-nix/
+venv/
+images1024x1024/
+preprocessed_dataset/
+ffhq-dataset-v2.json
