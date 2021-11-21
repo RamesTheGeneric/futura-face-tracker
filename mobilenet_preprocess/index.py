@@ -30,7 +30,7 @@ def process_data(data, context):
         if len(rects) == 0:
             print("skip image %s, could not find landmarks" % (image))
             return False
-        rects = sorted(rects, key=lambda x: x.width() + x.height(), reverse=True)
+        rects = sorted(rects, key=lambda x: x.width() * x.height(), reverse=True)
         pts = face_regressor(RGB_img, rects[0]).parts()
         pts = np.array([[pt.x, pt.y] for pt in pts]).T
 
