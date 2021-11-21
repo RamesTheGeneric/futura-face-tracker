@@ -19,7 +19,7 @@ def findPointsBounds(points, offset):
 
 
 def process_data(data, context):
-    try
+    try:
         (face_detector, face_regressor, output_folder, dataset_folder) = context
         image = data['file_path']
         output_size = 240
@@ -76,7 +76,7 @@ def process_data(data, context):
             json.dump(chunk, outfile)
             print(image)
     except Exception as e:
-            print('error with image', image, e)
+        print('error with image', image, e)
 
 def main():
     dlib_landmark_model = 'trained_models/dlib/shape_predictor_68_face_landmarks.dat'
