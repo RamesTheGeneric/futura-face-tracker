@@ -1,6 +1,10 @@
 import time
+import PIL
+import cv2
 
+import torch
 from utils import AverageMeter
+import numpy as np
 import wandb
 from progress.bar import Bar
 
@@ -36,7 +40,11 @@ def train(settings, train_loader, train_loader_len, model, criterion, optimizer,
     model.train()
 
     end = time.time()
-    for i, (input, target) in enumerate(train_loader):
+    for i, batch in enumerate(train_loader):
+        input = batch['image']
+        target = batch['landmarks']
+        step = i * (epoch + 1)
+
         lr = adjust_learning_rate(settings, optimizer, epoch, i, train_loader_len)
 
         # measure data loading time
@@ -54,13 +62,29 @@ def train(settings, train_loader, train_loader_len, model, criterion, optimizer,
         # compute gradient and do SGD step
         optimizer.zero_grad()
         loss.backward()
-        wandb.log({ "train/loss": float(loss) })
-        wandb.log({ "train/lr": float(loss) })
+      
         optimizer.step()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
+
+
+        if (step % 100 == 0):
+            img = input.cpu().numpy()[0]
+            img = np.transpose(img, (2, 1, 0)).copy() * 255
+            pp = output[0].reshape((68, 2))
+            tp = target.cpu().numpy()[0].reshape((68, 2))
+            for e in range(68):
+                cv2.circle(img, (int(pp[e][0] * 224) , int(pp[e][1] * 224)) , 1, (255, 0, 0), 2)
+                cv2.circle(img, (int(tp[e][0] * 224) , int(tp[e][1] * 224)) , 1, (0, 255, 0), 2)
+            wandb.log({ "prediction": wandb.Image(img) })
+        
+        
+        wandb.log({
+            "train/loss": float(loss),
+            "train/lr": float(loss),
+        })
 
         # plot progress
         bar.suffix  = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | LR: {lr:.4f}'.format(

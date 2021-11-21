@@ -1,9 +1,10 @@
 import torch
 import os
 import numpy as np
-from skimage import io
 from torch.utils.data import Dataset
 import pandas as pd
+import cv2
+from PIL import Image
 
 class FaceLandmarksDataset(Dataset):
     """Face Landmarks dataset."""
@@ -27,10 +28,15 @@ class FaceLandmarksDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
         img_name = os.path.join(self.root_dir, self.landmarks_frame.iloc[idx]['image'])
-        image = io.imread(img_name)
+        img = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
+        image = cv2.merge([img,img,img])
         landmarks = self.landmarks_frame.iloc[idx]['landmarks']
-        landmarks = np.array([landmarks])
-        landmarks = landmarks.astype('float').reshape(-1, 2)
+        landmarks = np.array(landmarks)
+        landmarks = landmarks.reshape((68, 2))
+        for index in range(68):
+            if (index >= 0 and index <= 35):
+                landmarks[index][0] = 0
+                landmarks[index][1] = 0
         sample = {'image': image, 'landmarks': landmarks}
 
         if self.transform:
