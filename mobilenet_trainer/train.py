@@ -3,6 +3,7 @@ import PIL
 import cv2
 
 import torch
+from transformers import tensorToData
 from utils import AverageMeter
 import numpy as np
 import wandb
@@ -40,10 +41,11 @@ def train(settings, train_loader, train_loader_len, model, criterion, optimizer,
     model.train()
 
     end = time.time()
+    count = 0
     for i, batch in enumerate(train_loader):
         input = batch['image']
-        target = batch['landmarks']
-        step = i * (epoch + 1)
+        target = batch['target']
+        step = count + (epoch * train_loader_len)
 
         lr = adjust_learning_rate(settings, optimizer, epoch, i, train_loader_len)
 
@@ -71,20 +73,26 @@ def train(settings, train_loader, train_loader_len, model, criterion, optimizer,
 
 
         if (step % 100 == 0):
-            img = input.cpu().numpy()[0]
-            img = np.transpose(img, (2, 1, 0)).copy() * 255
-            pp = output[0].reshape((68, 2))
-            tp = target.cpu().numpy()[0].reshape((68, 2))
-            for e in range(68):
-                cv2.circle(img, (int(pp[e][0] * 224) , int(pp[e][1] * 224)) , 1, (255, 0, 0), 2)
-                cv2.circle(img, (int(tp[e][0] * 224) , int(tp[e][1] * 224)) , 1, (0, 255, 0), 2)
-            wandb.log({ "prediction": wandb.Image(img) })
+            (img, outputLandmarks, targetLandmarks) = tensorToData(input, output, target)
+            for e in range(20):
+                cv2.circle(img, (int(outputLandmarks[e][0] * 224) , int(outputLandmarks[e][1] * 224)) , 1, (255, 0, 0), 2)
+                cv2.circle(img, (int(targetLandmarks[e][0] * 224) , int(targetLandmarks[e][1] * 224)) , 1, (0, 255, 0), 2)
+            # tablePrediction = wandb.Table(data=[[label, val] for (label, val) in zip(, outputEmotions)], columns = ["emotion", "value"])
+            # tableEmotions = wandb.Table(data=[[label, val] for (label, val) in zip(['anger', 'contempt', 'disgust', 'fear', 'happiness', 'neutral', 'sadness', 'surprise'], targetEmotions)], columns = ["emotion", "value"])
+            # emotions = ['anger', 'contempt', 'disgust', 'fear', 'happiness', 'neutral', 'sadness', 'surprise']
+            # wandb.log({'emotion/' + emotions[i] + '/target': targetEmotions[i] for i in range(len(emotions))}, step=step)
+            # wandb.log({'emotion/' + emotions[i] + '/prediction': outputEmotions[i] for i in range(len(emotions))}, step=step)
+            wandb.log({ 
+                "prediction": wandb.Image(img), 
+                # "emotions_prediction":  wandb.plot.bar(tablePrediction, "emotion", "value", title="Emotions Predictions"),
+                # "emotions": wandb.plot.bar(tableEmotions, "emotion", "value", title="Emotions Target") 
+            }, step=step)
         
         
         wandb.log({
             "train/loss": float(loss),
-            "train/lr": float(loss),
-        })
+            "train/lr": float(lr),
+        }, step=step)
 
         # plot progress
         bar.suffix  = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | LR: {lr:.4f}'.format(
@@ -97,6 +105,7 @@ def train(settings, train_loader, train_loader_len, model, criterion, optimizer,
             loss=losses.avg,
             lr=lr
         )
+        count = count + 1
         bar.next()
     bar.finish()
     return (losses.avg)

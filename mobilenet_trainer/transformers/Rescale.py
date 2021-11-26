@@ -9,12 +9,8 @@ class Rescale(object):
         self.output_size = output_size
 
     def __call__(self, sample):
-        image, landmarks = sample['image'], sample['landmarks']
-
-        width = image.shape[0]
-        height = image.shape[1]
-        img = cv2.resize(image, dsize=(self.output_size, self.output_size))
-
-        landmarks = landmarks * (self.output_size / height, self.output_size / width)
-
-        return {'image': img, 'landmarks': landmarks }
+        width = sample['image'].shape[0]
+        height = sample['image'].shape[1]
+        sample['image'] = cv2.resize(sample['image'], dsize=(self.output_size, self.output_size))
+        sample['landmarks'] = sample['landmarks'] * (self.output_size / height, self.output_size / width)
+        return sample

@@ -27,7 +27,7 @@ def main(settings):
     checkpoint_folder = 'trained_models/Mobilenet-ffhq-croped/' + datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
     wandb.init(project="FuturaFaceTacker", name=name)
 
-    model = mobilenetv2()
+    model = mobilenetv2(num_classes=20 * 2)
 
     if not settings.distributed:
         model = torch.nn.DataParallel(model).cuda()
@@ -36,10 +36,10 @@ def main(settings):
         model = torch.nn.parallel.DistributedDataParallel(model)
 
     criterion = nn.MSELoss().cuda()
-    optimizer = torch.optim.SGD(
+    optimizer = torch.optim.Adam(
         model.parameters(), 
         settings.lr,
-        momentum=settings.momentum,
+        # momentum=settings.momentum,
         weight_decay=settings.weight_decay)
 
     # if (settings.resume):
@@ -51,13 +51,12 @@ def main(settings):
     cudnn.benchmark = True
 
     face_dataset = FaceLandmarksDataset(
-        json_file='datasets/preprocessed_dataset/dataset.json', 
-        root_dir='datasets/preprocessed_dataset', 
+        json_file='datasets/prepocessed_dataset_2021-11-24_03-17-47-802457/dataset.json', 
+        root_dir='datasets/prepocessed_dataset_2021-11-24_03-17-47-802457', 
         transform=transforms.Compose([Rescale(224), Normalize(), ToTensor()])
     )
     train_loader, train_loader_len = get_dataloader(face_dataset)
 
-    best_prec1 = 0
     for epoch in range(settings.start_epoch, settings.epochs):
         print('\nEpoch: [%d | %d]' % (epoch + 1, settings.epochs))
         train_loss = train(settings, train_loader, train_loader_len, model, criterion, optimizer, epoch)
@@ -65,7 +64,6 @@ def main(settings):
             'epoch': epoch + 1,
             'arch': 'mobilenetv2',
             'state_dict': model.state_dict(),
-            'best_prec1': best_prec1,
             'optimizer' : optimizer.state_dict(),
         }, folder=checkpoint_folder, filename=f"checkpoint-{epoch}.pth.tar")
 
@@ -75,13 +73,13 @@ def main(settings):
 if __name__ == '__main__':
     class Settings:
         world_size = -1
-        lr = 0.1
+        lr = 0.00001
         momentum = 0.9
         distributed = False
         weight_decay = 1e-4
         resume = False
         start_epoch = 0
-        epochs = 90
+        epochs = 50
         warmup = False
         lr_decay = 'step'
         gamma = 0.1
