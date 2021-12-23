@@ -51,8 +51,8 @@ def main(settings):
     cudnn.benchmark = True
 
     face_dataset = FaceLandmarksDataset(
-        json_file='datasets/prepocessed_dataset_2021-11-24_03-17-47-802457/dataset.json', 
-        root_dir='datasets/prepocessed_dataset_2021-11-24_03-17-47-802457', 
+        json_file='datasets/prepocessed_dataset_2021-12-16_22-48-29-975311/dataset.json', 
+        root_dir='datasets/prepocessed_dataset_2021-12-16_22-48-29-975311', 
         transform=transforms.Compose([Rescale(224), Normalize(), ToTensor()])
     )
     train_loader, train_loader_len = get_dataloader(face_dataset)

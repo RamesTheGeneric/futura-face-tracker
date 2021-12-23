@@ -57,15 +57,15 @@ def process_data(data, context):
         output_size = 240
 
         img = cv2.imread(os.path.join(dataset_folder, image))
-        img = sp_noise(img, 0.01)
+        # img = sp_noise(img, 0.01)
         # encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 10]
-        bytes = simplejpeg.encode_jpeg(img, 15)
+        bytes = simplejpeg.encode_jpeg(img, 50)
         img = simplejpeg.decode_jpeg(bytes)
         # result, encimg = cv2.imencode('.jpg', img, encode_param)
         # img=cv2.imdecode(encimg,1)
         # div = 10
         # img = img // div * div + div // 2
-        img = cv2.blur(img,(7, 7))
+        img = cv2.blur(img,(5, 5))
         RGB_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         rects = face_detector(RGB_img, 1)
         if len(rects) == 0:

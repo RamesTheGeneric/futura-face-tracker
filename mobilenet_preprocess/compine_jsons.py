@@ -3,7 +3,7 @@ import os
 import glob
 import pandas as pd
 
-dataset_folder = 'datasets/prepocessed_dataset_2021-11-24_16-35-11-386760'
+dataset_folder = 'datasets/prepocessed_dataset_2021-12-16_22-48-29-975311'
 files = glob.iglob(f"{dataset_folder}/images1024x1024/**/*.json", recursive=True)
 
 shapes = []
