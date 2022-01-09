@@ -38,10 +38,10 @@ def main():
 
     num_face_blendshapes = 37
     linear = torch.nn.Linear(1280, num_face_blendshapes)
-    newmodel = torch.nn.Sequential(*(list(map(enable_gradient_layer, list(list(model.children())[0].children())[:-1])) + [torch.nn.Flatten(), linear]))
+    newmodel = torch.nn.Sequential(*([torch.nn.ReLU()]  + list(map(enable_gradient_layer, list(list(model.children())[0].children())[:-1])) + [torch.nn.Flatten(), torch.nn.ReLU(), linear]))
     newmodel.cuda()
     newmodel = torch.nn.DataParallel(newmodel).cuda()
-    checkpoint = torch.load('trained_models\\FuturaFaceBlenshapes\\2022-01-03_20-46-57-452673\\checkpoint-28.pth.tar')
+    checkpoint = torch.load('trained_models\\FuturaFaceBlenshapes\\2022-01-07_12-26-52-801156\\checkpoint-26.pth.tar')
     newmodel.load_state_dict(checkpoint['state_dict'])
 
 
