@@ -84,7 +84,7 @@ def recorded_shapes(dataset, dataset_folder, batch_size=64, agmentations=False):
                     image_count = 0
                     yield tstacked, stacked
 
-def log_prediction(step, input, output, target):
+def log_prediction(step, input, output, target, validation=False):
     shapeKeys = [
         'JawRight',
         'JawLeft',
@@ -127,6 +127,8 @@ def log_prediction(step, input, output, target):
 
     img = input.cpu().numpy()[0]
     img = np.transpose(img, (2, 1, 0)).copy() * 255
+    # if validation:
+        # print(np.amin(img), np.amax(img), img)
     fig = Figure(figsize=(10, 10), dpi=60)
     canvas = FigureCanvasAgg(fig)
     ax = fig.add_axes([0,0,1,1])
@@ -134,6 +136,10 @@ def log_prediction(step, input, output, target):
     labels = shapeKeys
     out_l =  output.cpu().detach().numpy()[0]
     target_l = target.cpu().numpy()[0]
+    # if validation:
+    print("input", np.amin(input.cpu().numpy()[0]), np.amax(input.cpu().numpy()[0]), input.cpu().numpy()[0].shape)
+    print("out", np.amin(out_l), np.amax(out_l), out_l.shape)
+    print("target", np.amin(target_l), np.amax(target_l), target_l.shape)
 
     x = np.arange(len(labels))  # the label locations
     width = 0.35  # the width of the bars
@@ -160,15 +166,14 @@ def log_prediction(step, input, output, target):
 def train(model, step, shapes, criterion, optimizer):
     model.train()
     for shape in shapes:
+        optimizer.zero_grad()
         (target, input) = shape
         output = model(input)
-        target = target.cuda()
         loss = criterion(output, target)
-        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         
-        if (step % 50 == 0):
+        if (step % 64 == 0):
             (img, pred) = log_prediction(step, input, output, target)
 
             wandb.log({
@@ -189,12 +194,12 @@ def validate(model, epoch, step, shapes):
     model.eval()
     list = []
     for shape in shapes:
-        step = step + 1
-        if (step % 20 == 0 and step < 200):
+        if (step % 64 == 0 and step < 500):
             (target, input) = shape
             output = model(input)
-            (img, pred) = log_prediction(step, input, output, target)
+            (img, pred) = log_prediction(step, input, output, target, True)
             list = list +  [wandb.Image(img), wandb.Image(pred)]
+        step = step + 1
        
     wandb.log({
         f"val_{epoch}": list, 
@@ -218,11 +223,8 @@ def main():
     linear = torch.nn.Linear(1280, config.BLENDSHAPES)
     newmodel = torch.nn.Sequential(*([torch.nn.ReLU()]  + list(map(enable_gradient_layer, list(list(model.children())[0].children())[:-1])) + [torch.nn.Flatten(), torch.nn.ReLU(), linear]))
     # # newmodel = torch.nn.Sequential(*(list(map(enable_gradient_layer, list(list(model.children())[0].children())[:-1]))))
-    newmodel.cuda()
     newmodel = torch.nn.DataParallel(newmodel).cuda()
-
-    wandb.watch(newmodel, log_freq=100)
-    # print(newmodel)
+    newmodel.cuda()
 
     criterion = nn.MSELoss().cuda()
     optimizer = torch.optim.Adam(
@@ -230,6 +232,19 @@ def main():
         5e-5,
     )
 
+    resume = False
+    start_epoch = 0
+    if resume:
+        newmodel_checkpoint = torch.load('trained_models\\FuturaFaceBlenshapes\\2022-01-09_09-12-05-386685\\checkpoint-27.pth.tar')
+        newmodel.load_state_dict(newmodel_checkpoint['state_dict'])
+        start_epoch = newmodel_checkpoint['epoch'] + 1
+        optimizer.load_state_dict(newmodel_checkpoint['optimizer'])
+        print("RESUMING FROM EPOCH", start_epoch)
+
+    newmodel.eval()
+
+
+    wandb.watch(newmodel, log_freq=100)
     cudnn.benchmark = True
 
     dataset_folder = 'datasets/recorded_dataset_1641092589206/'
@@ -239,19 +254,24 @@ def main():
     epochs = 60
     step = 0
    
-    
-    train_samples = dataset
-    validation_samples = dataset
+    dataset = dataset.sample(frac=0.2)
+    train_samples = dataset.copy()
+    validation_samples = dataset.copy()
 
     for epoch in range(epochs):
+        if (epoch < start_epoch):
+            continue
         print("EPOCH ", epoch)
-        train_shapes = recorded_shapes(train_samples, dataset_folder, 50)
+        newmodel.train()
+        train_shapes = recorded_shapes(train_samples, dataset_folder, 64)
         step = train(newmodel, step, train_shapes, criterion, optimizer)
 
-        print("VALIDATION ", epoch)
-        val_shapes = recorded_shapes(validation_samples, dataset_folder, 30)
-        val_step = 0
-        val_step = validate(newmodel, epoch, val_step, val_shapes)
+        with torch.no_grad():
+            newmodel.eval()
+            print("VALIDATION ", epoch)
+            val_shapes = recorded_shapes(validation_samples, dataset_folder, 64)
+            val_step = 0
+            val_step = validate(newmodel, epoch, val_step, val_shapes)
 
         save_checkpoint({
             'epoch': epoch,

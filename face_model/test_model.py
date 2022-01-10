@@ -235,6 +235,8 @@ def main():
     checkpoint = torch.load('trained_models\\FuturaFaceBlenshapes\\2022-01-07_02-44-06-318806\\checkpoint-59.pth.tar')
     newmodel.load_state_dict(checkpoint['state_dict'])
 
+    newmodel.eval()
+
     dataset_folder = 'datasets/recorded_dataset_1641092589206/'
     dataset_file = dataset_folder + 'model.json'
     dataset = pd.read_json(dataset_file)
@@ -247,8 +249,8 @@ def main():
             img = grayConversion(im)
             img = cv2.merge([img,img,img]).astype(dtype=np.uint8)
             img = cv2.resize(img, dsize=(config.X_RES, config.Y_RES))
-            target = torch.from_numpy(np.array(shape).astype(dtype=np.float32)).float()
-            tensor = torch.from_numpy(np.transpose(img / 255, (2, 1, 0))).float().unsqueeze(0)
+            target = torch.from_numpy(np.array(shape).astype(dtype=np.float32)).float().cuda()
+            tensor = torch.from_numpy(np.transpose(img / 255, (2, 1, 0))).float().unsqueeze(0).cuda()
             res = newmodel(tensor)
             (pred) = log_prediction(0, tensor, res, target)
             cv2.imshow('frame', pred)
