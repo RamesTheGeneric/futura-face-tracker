@@ -254,7 +254,7 @@ def main():
     epochs = 60
     step = 0
    
-    dataset = dataset.sample(frac=0.2)
+    # dataset = dataset.sample(frac=0.2)
     train_samples = dataset.copy()
     validation_samples = dataset.copy()
 
