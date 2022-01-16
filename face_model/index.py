@@ -255,7 +255,7 @@ def main():
     dataset_file = dataset_folder + 'model.json'
     dataset = pd.read_json(dataset_file)
 
-    epochs = 60
+    epochs = 35
     step = 0
    
     # dataset = dataset.sample(frac=0.2)
@@ -267,13 +267,13 @@ def main():
             continue
         print("EPOCH ", epoch)
         newmodel.train()
-        train_shapes = recorded_shapes(train_samples, dataset_folder, 64)
+        train_shapes = recorded_shapes(train_samples, dataset_folder, 128)
         step = train(newmodel, step, train_shapes, criterion, optimizer)
 
         with torch.no_grad():
             newmodel.eval()
             print("VALIDATION ", epoch)
-            val_shapes = recorded_shapes(validation_samples, dataset_folder, 64)
+            val_shapes = recorded_shapes(validation_samples, dataset_folder, 128)
             val_step = 0
             val_step = validate(newmodel, epoch, val_step, val_shapes)
 
