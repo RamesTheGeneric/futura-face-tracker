@@ -169,16 +169,20 @@ def train(model, step, shapes, criterion, optimizer):
         optimizer.zero_grad()
         (target, input) = shape
         output = model(input)
-        loss = criterion(output, target)
-        loss.backward()
-        optimizer.step()
-        
+
         if (step % 64 == 0):
             (img, pred) = log_prediction(step, input, output, target)
 
             wandb.log({
                 f"prediction": [wandb.Image(img), wandb.Image(pred)], 
             }, step=step)
+
+
+        loss = criterion(output, target)
+        loss.backward()
+        optimizer.step()
+        
+    
         
         wandb.log({
             # "prediction": wandb.Image(img), 
