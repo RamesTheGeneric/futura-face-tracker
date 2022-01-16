@@ -220,7 +220,7 @@ def main():
     model.cuda()
     model = torch.nn.DataParallel(model).cuda()
 
-    checkpoint = torch.load('trained_models\\Mobilenet-ffhq-croped\\2021-12-16_23-48-32-851676\\checkpoint-40.pth.tar')
+    checkpoint = torch.load('trained_models/Mobilenet-ffhq-croped/2021-12-16_23-48-32-851676/checkpoint-40.pth.tar')
     model.load_state_dict(checkpoint['state_dict'])
     model.eval()
 
@@ -239,7 +239,7 @@ def main():
     resume = False
     start_epoch = 0
     if resume:
-        newmodel_checkpoint = torch.load('trained_models\\FuturaFaceBlenshapes\\2022-01-09_09-12-05-386685\\checkpoint-27.pth.tar')
+        newmodel_checkpoint = torch.load('trained_models/FuturaFaceBlenshapes/2022-01-09_09-12-05-386685/checkpoint-27.pth.tar')
         newmodel.load_state_dict(newmodel_checkpoint['state_dict'])
         start_epoch = newmodel_checkpoint['epoch'] + 1
         optimizer.load_state_dict(newmodel_checkpoint['optimizer'])
